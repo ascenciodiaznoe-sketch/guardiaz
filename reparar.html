@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reparar GuardiaZ</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #18181b;
+            color: #fff;
+            padding: 20px;
+            margin: 0;
+        }
+        .container { max-width: 500px; margin: 0 auto; }
+        h1 { font-size: 22px; color: #ea580c; margin-bottom: 5px; }
+        p { color: #d1d5db; line-height: 1.5; }
+        button {
+            width: 100%;
+            padding: 18px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            font-size: 17px;
+            margin-top: 16px;
+            cursor: pointer;
+        }
+        .btn-reparar { background: #ea580c; color: white; }
+        #estado {
+            margin-top: 16px;
+            padding: 14px;
+            border-radius: 8px;
+            display: none;
+            line-height: 1.5;
+        }
+        .ok { background: #14532d; color: #bbf7d0; display: block !important; }
+        .error { background: #7f1d1d; color: #fecaca; display: block !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Reparar GuardiaZ</h1>
+        <p>
+            Esta página borra <strong>solo</strong> la copia dañada (caché y service worker)
+            que está atorada en tu celular.
+        </p>
+        <p style="color:#fbbf24;">
+            ⚠️ Tu inventario, recetas e historial NO se tocan. Viven en otro lugar separado
+            (localStorage) que esta acción nunca borra.
+        </p>
+
+        <button class="btn-reparar" onclick="repararApp()">🧹 Reparar Ahora</button>
+
+        <div id="estado"></div>
+    </div>
+
+    <script>
+        async function repararApp() {
+            const confirmar = confirm(
+                '¿Confirmas que ya tienes tu respaldo descargado o copiado?\n\n' +
+                'Esto va a limpiar la copia dañada (caché/service worker).\n' +
+                'Tus datos guardados NO se borran.'
+            );
+            if (!confirmar) return;
+
+            let mensajes = [];
+
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                    }
+                    mensajes.push('Service workers eliminados: ' + registrations.length);
+                }
+            } catch (e) {
+                mensajes.push('Aviso al limpiar service worker: ' + e.message);
+            }
+
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (const name of cacheNames) {
+                        await caches.delete(name);
+                    }
+                    mensajes.push('Caches borradas: ' + cacheNames.length);
+                }
+            } catch (e) {
+                mensajes.push('Aviso al limpiar cache: ' + e.message);
+            }
+
+            mostrarEstado(
+                '✅ ¡Listo! ' + mensajes.join(' | ') +
+                '\n\nAhora CIERRA esta pestaña por completo, vuelve a abrir Chrome y entra a tu app normal (index.html). Tus datos siguen intactos.',
+                'ok'
+            );
+        }
+
+        function mostrarEstado(msg, tipo) {
+            const el = document.getElementById('estado');
+            el.textContent = msg;
+            el.className = tipo;
+            el.style.whiteSpace = 'pre-line';
+        }
+    </script>
+</body>
+</html>
